@@ -17,8 +17,14 @@ A real-time collaborative document editor built using modern web technologies.
 - Realtime: WebSockets
 - Database: PostgreSQL
 
+## Design Decisions
+- Backend memory is used as the source of truth for live document state.
+- PostgreSQL is used for persistence and crash recovery.
+- REST APIs are used for state initialization, WebSockets for real-time synchronization.
+
 ## System Architecture
-(architecture diagram here)
+<img width="726" height="608" alt="Untitled-2026-01-22-1843" src="https://github.com/user-attachments/assets/87c93e8d-36d9-4e13-8d61-49b472db8645" />
+
 
 ## Status
 🚧 In Progress
