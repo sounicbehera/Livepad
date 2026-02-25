@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Collab Test</title>
+</head>
+<body>
+
+<h2>Collaborative Editor Test</h2>
+
+<textarea id="editor" rows="10" cols="50"></textarea>
+
+<script>
+  const ws = new WebSocket("ws://localhost:5000");
+
+  const editor = document.getElementById("editor");
+
+  ws.onopen = () => {
+    console.log("Connected");
+
+    ws.send(JSON.stringify({
+      type: "join",
+      docId: "test-doc"
+    }));
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === "init") {
+      editor.value = data.content;
+    }
+
+    if (data.type === "update") {
+      editor.value = data.content;
+    }
+  };
+
+  editor.addEventListener("input", () => {
+    ws.send(JSON.stringify({
+      type: "edit",
+      content: editor.value
+    }));
+  });
+</script>
+
+</body>
+</html>
