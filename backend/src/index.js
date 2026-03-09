@@ -9,13 +9,13 @@ import { verifyToken } from "./middleware/authMiddleware.js";
 import pool from "./db.js";
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 
+// Configure CORS with allowed origins
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://live-pad.netlify.app'  // Your frontend URL
+  'https://live-pad.netlify.app'
 ];
 
 app.use(cors({
