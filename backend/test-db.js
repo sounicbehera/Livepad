@@ -13,4 +13,4 @@ async function test() {
   }
 }
 
-test();
+test();p
