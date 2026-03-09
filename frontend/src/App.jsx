@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
 
+// Get API URLs from environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+
 export default function App() {
   const [screen, setScreen] = useState('auth'); // auth, editor
   const [user, setUser] = useState(null);
@@ -16,7 +20,7 @@ export default function App() {
     setLoading(true);
     try {
       // Step 1: Send OTP
-      const sendRes = await fetch('http://localhost:5000/auth/send-otp', {
+      const sendRes = await fetch(`${API_URL}/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -29,7 +33,7 @@ export default function App() {
       if (!otp) return;
 
       // Step 3: Verify OTP
-      const verifyRes = await fetch('http://localhost:5000/auth/verify-otp', {
+      const verifyRes = await fetch(`${API_URL}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp, name })
@@ -54,7 +58,7 @@ export default function App() {
     if (!token) return;
 
     try {
-      const ws = new WebSocket(`ws://localhost:5000?token=${token}`);
+      const ws = new WebSocket(`${WS_URL}?token=${token}`);
 
       ws.onopen = () => {
         setIsConnected(true);
@@ -73,7 +77,11 @@ export default function App() {
         }
       };
 
-      ws.onerror = () => setIsConnected(false);
+      ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+        setIsConnected(false);
+      };
+      
       ws.onclose = () => setIsConnected(false);
 
       wsRef.current = ws;
