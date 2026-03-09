@@ -9,25 +9,17 @@ import { verifyToken } from "./middleware/authMiddleware.js";
 import pool from "./db.js";
 
 const app = express();
-app.use(express.json());
+
 
 // Configure CORS with allowed origins
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://live-pad.netlify.app'
-];
 
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
+  origin: '*',
+  credentials: false
 }));
+
+// Parse JSON
+app.use(express.json());
 
 // Public routes (no auth required)
 app.use("/auth", authRoutes);
