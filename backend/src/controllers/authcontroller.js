@@ -64,7 +64,7 @@ export const verifyOTP = async (req, res) => {
 
     console.log("📨 Verify OTP Request:", { email, otp, name });
 
-    // Query OTP from database with expiry check
+    
     const result = await pool.query(
       "SELECT * FROM otps WHERE email=$1 AND otp=$2 AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1",
       [email, otp]
