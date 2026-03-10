@@ -2,77 +2,88 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL = 'noreply@sendgrid.net';
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const FROM_EMAIL = 'noreply@livepad.com'; // Use any email - Brevo doesn't require verification
+const FROM_NAME = 'LivePad';
 
 export const sendOTPEmail = async (email, otp) => {
   try {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SENDGRID_API_KEY}`
+        'api-key': BREVO_API_KEY
       },
       body: JSON.stringify({
-        personalizations: [
+        sender: {
+          name: FROM_NAME,
+          email: FROM_EMAIL
+        },
+        to: [
           {
-            to: [{ email: email }],
-            subject: '🔐 Your LivePad OTP Code'
+            email: email,
+            name: 'User'
           }
         ],
-        from: {
-          email: FROM_EMAIL,
-          name: 'LivePad'
-        },
-        content: [
-          {
-            type: 'text/html',
-            value: `
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%); padding: 40px 20px; border-radius: 12px 12px 0 0; text-align: center;">
-                  <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">LivePad</h1>
-                  <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">Real-time Collaborative Editor</p>
-                </div>
-                
-                <div style="background: #f8f9fa; padding: 40px 30px; border-radius: 0 0 12px 12px;">
-                  <p style="color: #333; font-size: 16px; margin: 0 0 20px 0; font-weight: 500;">Hi there,</p>
-                  
-                  <p style="color: #666; font-size: 15px; line-height: 1.6; margin: 0 0 30px 0;">
-                    Your OTP code for LivePad login is:
-                  </p>
-                  
-                  <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; margin: 30px 0; border: 2px solid #7c3aed;">
-                    <p style="color: #999; font-size: 12px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px;">Your OTP Code</p>
-                    <h2 style="color: #7c3aed; font-size: 42px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace; font-weight: 700;">${otp}</h2>
-                  </div>
-                  
-                  <div style="background: rgba(124, 58, 237, 0.1); padding: 16px; border-radius: 8px; border-left: 4px solid #7c3aed; margin: 30px 0;">
-                    <p style="color: #666; font-size: 13px; margin: 0;">
-                      ⏰ This code expires in <strong>5 minutes</strong>. Don't share it with anyone.
-                    </p>
-                  </div>
-                  
-                  <p style="color: #999; font-size: 13px; margin: 30px 0 0 0; border-top: 1px solid #ddd; padding-top: 20px;">
-                    If you didn't request this OTP, please ignore this email. Your account is safe.
-                  </p>
-                  
-                  <p style="color: #999; font-size: 12px; margin: 15px 0 0 0; text-align: center;">
-                    © 2026 LivePad. All rights reserved.
-                  </p>
-                </div>
+        subject: '🔐 Your LivePad OTP Code',
+        htmlContent: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%); padding: 40px 20px; border-radius: 12px 12px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">LivePad</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">Real-time Collaborative Editor</p>
+            </div>
+            
+            <!-- Content -->
+            <div style="background: #f8f9fa; padding: 40px 30px; border-radius: 0 0 12px 12px;">
+              <p style="color: #333; font-size: 16px; margin: 0 0 20px 0; font-weight: 500;">Hi there,</p>
+              
+              <p style="color: #666; font-size: 15px; line-height: 1.6; margin: 0 0 30px 0;">
+                Your OTP code for LivePad login is:
+              </p>
+              
+              <!-- OTP Code Box -->
+              <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; margin: 30px 0; border: 2px solid #7c3aed;">
+                <p style="color: #999; font-size: 12px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px;">Your OTP Code</p>
+                <h2 style="color: #7c3aed; font-size: 42px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace; font-weight: 700;">${otp}</h2>
               </div>
-            `
-          }
-        ]
+              
+              <!-- Info -->
+              <div style="background: rgba(124, 58, 237, 0.1); padding: 16px; border-radius: 8px; border-left: 4px solid #7c3aed; margin: 30px 0;">
+                <p style="color: #666; font-size: 13px; margin: 0;">
+                  ⏰ This code expires in <strong>5 minutes</strong>. Don't share it with anyone.
+                </p>
+              </div>
+              
+              <!-- Security Notice -->
+              <div style="background: #fff3cd; padding: 16px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 30px 0;">
+                <p style="color: #856404; font-size: 13px; margin: 0;">
+                  🔒 Never share your OTP with anyone, not even LivePad support.
+                </p>
+              </div>
+              
+              <!-- Footer -->
+              <p style="color: #999; font-size: 13px; margin: 30px 0 0 0; border-top: 1px solid #ddd; padding-top: 20px;">
+                If you didn't request this OTP, please ignore this email. Your account is safe.
+              </p>
+              
+              <p style="color: #999; font-size: 12px; margin: 15px 0 0 0; text-align: center;">
+                © 2026 LivePad. All rights reserved. | Built with ❤️
+              </p>
+            </div>
+          </div>
+        `,
+        textContent: `Your LivePad OTP code is: ${otp}\n\nThis code expires in 5 minutes.\n\nDo not share this code with anyone.\n\nIf you didn't request this OTP, please ignore this email.`
       })
     });
+
+    const data = await response.json();
 
     if (response.ok) {
       console.log(`✅ OTP email sent to ${email}`);
       return true;
     } else {
-      const error = await response.json();
-      console.error('❌ Email send failed:', error);
+      console.error('❌ Email send failed:', data);
       return false;
     }
   } catch (err) {
@@ -82,6 +93,11 @@ export const sendOTPEmail = async (email, otp) => {
 };
 
 export const testEmailConnection = async () => {
-  console.log('✅ Email service is ready (SendGrid)');
-  return true;
+  try {
+    console.log('✅ Email service is ready (Brevo)');
+    return true;
+  } catch (err) {
+    console.error('❌ Email service error:', err.message);
+    return false;
+  }
 };
