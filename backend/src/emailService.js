@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
-const FROM_EMAIL = 'noreply@livepad.com'; // Use any email - Brevo doesn't require verification
+const FROM_EMAIL = 'retikababy@gmail.com'; // Use any email - Brevo doesn't require verification
 const FROM_NAME = 'LivePad';
 
 export const sendOTPEmail = async (email, otp) => {
