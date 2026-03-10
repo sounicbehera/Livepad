@@ -5,6 +5,7 @@ import http from "http";
 import cors from "cors";
 import { setupWebSocket } from "./server.js";
 import authRoutes from "./routes/authRoutes.js";
+import roomRoutes from "./routes/roomRoutes.js";
 import { verifyToken } from "./middleware/authMiddleware.js";
 
 const app = express();
@@ -13,6 +14,9 @@ app.use(express.json());
 
 // Public routes (no auth required)
 app.use("/auth", authRoutes);
+
+// Protected routes (auth required)
+app.use("/rooms", roomRoutes);
 
 // Health check
 app.get("/", (req, res) => {
