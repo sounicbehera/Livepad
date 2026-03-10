@@ -35,7 +35,27 @@ const server = http.createServer(app);
 
 setupWebSocket(server);
 
-const PORT = 5000;
+// Railway/most PaaS providers inject PORT
+const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
+
+// Always return JSON for unknown routes (prevents frontend JSON parse crashes)
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: "Not Found",
+    path: req.originalUrl,
+  });
+});
+
+// Central error handler (JSON)
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  const status = typeof err?.status === "number" ? err.status : 500;
+  res.status(status).json({
+    success: false,
+    error: err?.message || "Internal Server Error",
+  });
+});
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
