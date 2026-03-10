@@ -13,6 +13,10 @@ export default function App() {
   const [roomId, setRoomId] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [pendingName, setPendingName] = useState('');
   const wsRef = useRef(null);
 
   // Auth flow
@@ -28,15 +32,32 @@ export default function App() {
 
       if (!sendRes.ok) throw new Error('Failed to send OTP');
 
-      // Step 2: Prompt for OTP (in real app, email would be sent)
-      const otp = prompt('Enter OTP sent to your email:');
-      if (!otp) return;
+      // Step 2: Show OTP modal instead of prompt
+      setLoading(false);
+      setPendingEmail(email);
+      setPendingName(name);
+      setShowOTPModal(true);
+      setOtpValue('');
+    } catch (err) {
+      alert('Login failed: ' + err.message);
+      setLoading(false);
+    }
+  };
 
+  // Handle OTP submission
+  const handleOTPSubmit = async () => {
+    if (!otpValue.trim()) {
+      alert('Please enter OTP');
+      return;
+    }
+
+    try {
+      setLoading(true);
       // Step 3: Verify OTP
       const verifyRes = await fetch(`${API_URL}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, name })
+        body: JSON.stringify({ email: pendingEmail, otp: otpValue, name: pendingName })
       });
 
       const data = await verifyRes.json();
@@ -45,8 +66,10 @@ export default function App() {
       localStorage.setItem('authToken', data.token);
       setUser(data.user);
       setScreen('editor');
+      setShowOTPModal(false);
+      setOtpValue('');
     } catch (err) {
-      alert('Login failed: ' + err.message);
+      alert('OTP verification failed: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -118,6 +141,17 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* OTP Modal */}
+      {showOTPModal && (
+        <OTPModal
+          email={pendingEmail}
+          otp={otpValue}
+          onOtpChange={setOtpValue}
+          onSubmit={handleOTPSubmit}
+          loading={loading}
+        />
+      )}
+
       {screen === 'auth' ? (
         <AuthScreen onLogin={handleLogin} loading={loading} />
       ) : (
@@ -131,6 +165,42 @@ export default function App() {
           roomId={roomId}
         />
       )}
+    </div>
+  );
+}
+
+function OTPModal({ email, otp, onOtpChange, onSubmit, loading }) {
+  return (
+    <div className="modal-overlay">
+      <div className="otp-modal">
+        <div className="otp-header">
+          <h2>🔐 Enter OTP</h2>
+          <p>We sent an OTP to <strong>{email}</strong></p>
+        </div>
+
+        <div className="otp-body">
+          <input
+            type="text"
+            placeholder="Enter 6-digit OTP"
+            value={otp}
+            onChange={(e) => onOtpChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            maxLength="6"
+            className="otp-input"
+            autoFocus
+            disabled={loading}
+          />
+
+          <button
+            onClick={onSubmit}
+            disabled={loading || otp.length < 6}
+            className="btn btn-primary otp-submit"
+          >
+            {loading ? 'Verifying...' : 'Verify OTP'}
+          </button>
+
+          <p className="otp-hint">💡 OTP expires in 5 minutes</p>
+        </div>
+      </div>
     </div>
   );
 }
