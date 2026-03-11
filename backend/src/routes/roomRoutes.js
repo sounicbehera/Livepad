@@ -7,7 +7,8 @@ import {
   getRoomMembers,
   inviteMember,
   removeMember,
-  getRoomDetails
+  getRoomDetails,
+  deleteRoom
 } from '../controllers/roomController.js';
 
 const router = express.Router();
@@ -35,5 +36,8 @@ router.post('/:roomId/invite', inviteMember);
 
 // Remove member from room
 router.delete('/:roomId/members/:userId', removeMember);
+
+// Delete room (owner only)
+router.delete('/:roomId', deleteRoom);
 
 export default router;

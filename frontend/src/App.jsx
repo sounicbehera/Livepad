@@ -216,6 +216,36 @@ export default function App() {
     }
   };
 
+  const handleDeleteRoom = async (room) => {
+    if (!room?.id) return;
+    if (room.userRole !== 'owner') {
+      alert('Only the room owner can delete the room');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete room "${room.name}" (${room.roomCode})?\n\nThis will remove all members and cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${API_URL}/rooms/${room.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Room deleted');
+        loadRooms();
+      } else {
+        alert(data.error || 'Failed to delete room');
+      }
+    } catch (err) {
+      alert('Failed to delete room: ' + err.message);
+    }
+  };
+
   // Connect to WebSocket
   const connectEditor = async (docId, docName) => {
     const token = localStorage.getItem('authToken');
@@ -396,6 +426,7 @@ export default function App() {
           onJoinRoom={() => setShowJoinRoomModal(true)}
           onOpenRoom={(room) => connectEditor(room.id, room.name)}
           onLoadMembers={(roomId) => { setRoomId(roomId); loadRoomMembers(roomId); }}
+          onDeleteRoom={handleDeleteRoom}
           onLogout={logout}
         />
       ) : (
@@ -527,7 +558,7 @@ function AuthScreen({ onLogin, loading }) {
   );
 }
 
-function DashboardScreen({ user, rooms, onCreateRoom, onJoinRoom, onOpenRoom, onLoadMembers, onLogout }) {
+function DashboardScreen({ user, rooms, onCreateRoom, onJoinRoom, onOpenRoom, onLoadMembers, onDeleteRoom, onLogout }) {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
@@ -579,6 +610,11 @@ function DashboardScreen({ user, rooms, onCreateRoom, onJoinRoom, onOpenRoom, on
                   <button onClick={() => onLoadMembers(room.id)} className="btn btn-secondary btn-sm">
                     Members
                   </button>
+                  {room.userRole === 'owner' && (
+                    <button onClick={() => onDeleteRoom(room)} className="btn btn-danger btn-sm">
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

@@ -92,6 +92,73 @@ export const sendOTPEmail = async (email, otp) => {
   }
 };
 
+export const sendRoomInviteEmail = async ({ toEmail, toName, inviterName, roomName, roomCode, role }) => {
+  try {
+    const safeInviterName = inviterName || 'Someone';
+    const safeRoomName = roomName || 'a room';
+    const safeRoomCode = roomCode || '';
+    const safeRole = role || 'member';
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': BREVO_API_KEY
+      },
+      body: JSON.stringify({
+        sender: {
+          name: FROM_NAME,
+          email: FROM_EMAIL
+        },
+        to: [
+          {
+            email: toEmail,
+            name: toName || 'User'
+          }
+        ],
+        subject: `📩 You’ve been invited to "${safeRoomName}" on LivePad`,
+        htmlContent: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%); padding: 36px 20px; border-radius: 12px 12px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">LivePad</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">Room invitation</p>
+            </div>
+            <div style="background: #f8f9fa; padding: 28px 24px; border-radius: 0 0 12px 12px;">
+              <p style="color: #333; font-size: 16px; margin: 0 0 14px 0;">
+                <strong>${safeInviterName}</strong> invited you to join the chat room <strong>"${safeRoomName}"</strong>.
+              </p>
+              <p style="color: #666; font-size: 14px; line-height: 1.6; margin: 0 0 18px 0;">
+                Your access level: <strong>${safeRole}</strong>
+              </p>
+              <div style="background: white; padding: 16px; border-radius: 10px; border: 1px solid #e5e7eb;">
+                <p style="color: #999; font-size: 12px; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">Room code</p>
+                <div style="font-size: 22px; letter-spacing: 3px; font-weight: 700; color: #7c3aed; font-family: 'Courier New', monospace;">${safeRoomCode}</div>
+              </div>
+              <p style="color: #999; font-size: 12px; margin: 18px 0 0 0;">
+                Open LivePad and use <strong>Join Room</strong> with the code above.
+              </p>
+            </div>
+          </div>
+        `,
+        textContent: `${safeInviterName} invited you to join "${safeRoomName}" on LivePad.\nRoom code: ${safeRoomCode}\nRole: ${safeRole}\n\nOpen LivePad and use Join Room with the code above.`
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log(`✅ Invite email sent to ${toEmail} for room ${safeRoomCode}`);
+      return true;
+    } else {
+      console.error('❌ Invite email send failed:', data);
+      return false;
+    }
+  } catch (err) {
+    console.error('❌ Invite email service error:', err.message);
+    return false;
+  }
+};
+
 export const testEmailConnection = async () => {
   try {
     console.log('✅ Email service is ready (Brevo)');

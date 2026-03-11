@@ -1,4 +1,5 @@
 import pool from '../db.js';
+import { sendRoomInviteEmail } from '../emailService.js';
 
 // Generate unique room code
 const generateRoomCode = () => {
@@ -66,16 +67,27 @@ export const listRooms = async (req, res) => {
   try {
     const userId = req.user.userId;
 
+    // NOTE: We join the current user's membership separately so each room returns once.
+    // The previous query grouped by rm.role (across all members), which could duplicate rooms.
     const result = await pool.query(
-      `SELECT r.id, r.name, r.room_code, r.owner_id, r.description, r.is_public, r.created_at,
-              rm.role, COUNT(DISTINCT rm.user_id) as member_count
-       FROM rooms r
-       LEFT JOIN room_members rm ON r.id = rm.room_id
-       WHERE r.id IN (
-         SELECT room_id FROM room_members WHERE user_id = $1
-       )
-       GROUP BY r.id, rm.role
-       ORDER BY r.created_at DESC`,
+      `SELECT
+          r.id,
+          r.name,
+          r.room_code,
+          r.owner_id,
+          r.description,
+          r.is_public,
+          r.created_at,
+          rm_user.role AS user_role,
+          COUNT(DISTINCT rm_all.user_id) as member_count
+        FROM rooms r
+        JOIN room_members rm_user
+          ON rm_user.room_id = r.id AND rm_user.user_id = $1
+        LEFT JOIN room_members rm_all
+          ON rm_all.room_id = r.id
+        GROUP BY
+          r.id, r.name, r.room_code, r.owner_id, r.description, r.is_public, r.created_at, rm_user.role
+        ORDER BY r.created_at DESC`,
       [userId]
     );
 
@@ -86,7 +98,7 @@ export const listRooms = async (req, res) => {
       ownerId: row.owner_id,
       description: row.description,
       isPublic: row.is_public,
-      userRole: row.role,
+      userRole: row.user_role,
       memberCount: parseInt(row.member_count),
       createdAt: row.created_at
     }));
@@ -98,6 +110,52 @@ export const listRooms = async (req, res) => {
   } catch (err) {
     console.error('❌ List rooms error:', err.message);
     res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Delete a room (owner only)
+export const deleteRoom = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { roomId } = req.params;
+    const userId = req.user.userId;
+
+    await client.query('BEGIN');
+
+    // Verify ownership (also ensures requester is a member)
+    const ownerCheck = await client.query(
+      `SELECT owner_id, room_code, name FROM rooms WHERE id = $1`,
+      [roomId]
+    );
+
+    if (ownerCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Room not found' });
+    }
+
+    const room = ownerCheck.rows[0];
+    if (String(room.owner_id) !== String(userId)) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'Only room owner can delete the room' });
+    }
+
+    // Remove memberships first (safe even if FK cascade is not configured)
+    await client.query('DELETE FROM room_members WHERE room_id = $1', [roomId]);
+
+    // Delete the room itself
+    await client.query('DELETE FROM rooms WHERE id = $1', [roomId]);
+
+    await client.query('COMMIT');
+
+    console.log(`✅ Room deleted: ${room.name} (${room.room_code}) by user ${userId}`);
+
+    res.json({ success: true, message: 'Room deleted successfully' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('❌ Delete room error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
   }
 };
 
@@ -254,6 +312,29 @@ export const inviteMember = async (req, res) => {
     );
 
     console.log(`✅ User ${invitedUserId} invited to room ${roomId} as ${role || 'editor'}`);
+
+    // Send invite email (best-effort; invitation is still created even if email fails)
+    try {
+      const inviterRes = await pool.query('SELECT name FROM users WHERE id = $1', [userId]);
+      const invitedRes = await pool.query('SELECT name FROM users WHERE id = $1', [invitedUserId]);
+      const roomRes = await pool.query('SELECT name, room_code FROM rooms WHERE id = $1', [roomId]);
+
+      const inviterName = inviterRes.rows[0]?.name || 'Someone';
+      const invitedName = invitedRes.rows[0]?.name || 'User';
+      const roomName = roomRes.rows[0]?.name || 'Room';
+      const roomCode = roomRes.rows[0]?.room_code || '';
+
+      await sendRoomInviteEmail({
+        toEmail: email,
+        toName: invitedName,
+        inviterName,
+        roomName,
+        roomCode,
+        role: role || 'editor'
+      });
+    } catch (emailErr) {
+      console.error('❌ Invite email error:', emailErr.message);
+    }
 
     res.json({
       success: true,
