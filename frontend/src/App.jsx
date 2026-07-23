@@ -394,7 +394,9 @@ export default function App() {
                     <p className="member-name">{member.name}</p>
                     <p className="member-email">{member.email}</p>
                   </div>
-                  <span className="member-role">{member.role}</span>
+                  <span className={`member-role ${String(member.role || '').toLowerCase()}`}>
+                    {member.role}
+                  </span>
                 </div>
               ))}
             </div>
@@ -508,35 +510,37 @@ function AuthScreen({ onLogin, loading }) {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>LivePad</h1>
+          <h1 className="gradient-text-animated">LivePad</h1>
           <p>Real-time Collaborative Editor</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="name">Name</label>
+          <div className="floating-field">
             <input
               id="name"
               type="text"
-              placeholder="Your name"
+              placeholder=" "
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={loading}
               required
+              autoComplete="name"
             />
+            <label htmlFor="name">Name</label>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
+          <div className="floating-field">
             <input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder=" "
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
               required
+              autoComplete="email"
             />
+            <label htmlFor="email">Email</label>
           </div>
 
           <button type="submit" disabled={loading} className="btn btn-primary">
@@ -553,6 +557,7 @@ function AuthScreen({ onLogin, loading }) {
         <div className="blob blob-1"></div>
         <div className="blob blob-2"></div>
         <div className="blob blob-3"></div>
+        <div className="blob blob-4"></div>
       </div>
     </div>
   );
@@ -563,14 +568,14 @@ function DashboardScreen({ user, rooms, onCreateRoom, onJoinRoom, onOpenRoom, on
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-left">
-          <h1>📚 My Rooms</h1>
+          <h1 className="gradient-text-animated">My Rooms</h1>
         </div>
         <div className="header-right">
           <div className="user-badge">
             <span className="user-avatar">{user?.name?.[0]?.toUpperCase()}</span>
             <span className="user-name-small">{user?.name}</span>
           </div>
-          <button onClick={onLogout} className="btn-logout">Logout</button>
+          <button onClick={onLogout} className="btn-logout" title="Logout">Logout</button>
         </div>
       </header>
 
@@ -600,8 +605,8 @@ function DashboardScreen({ user, rooms, onCreateRoom, onJoinRoom, onOpenRoom, on
                 </div>
                 <p className="room-description">{room.description || 'No description'}</p>
                 <div className="room-meta">
-                  <span className="room-role">👤 {room.userRole}</span>
-                  <span className="room-members">👥 {room.memberCount} members</span>
+                  <span className="room-role">Role: <strong>{room.userRole}</strong></span>
+                  <span className="room-members">{room.memberCount} members</span>
                 </div>
                 <div className="room-actions">
                   <button onClick={() => onOpenRoom(room)} className="btn btn-primary btn-sm">
@@ -635,7 +640,13 @@ function EditorScreen({ user, roomName, content, onContentChange, isConnected, o
         </div>
         <div className="editor-header-right">
           <button onClick={onShowMembers} className="btn-icon">👥</button>
-          <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
+          <div className="connection-indicator" title={isConnected ? 'Connected' : 'Disconnected'}>
+            <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
+            <span className="connection-text">{isConnected ? 'Connected' : 'Disconnected'}</span>
+          </div>
+          <div className="editor-user">
+            <span className="user-avatar user-avatar-sm">{user?.name?.[0]?.toUpperCase()}</span>
+          </div>
           <button onClick={onLogout} className="btn-logout">Logout</button>
         </div>
       </header>
